@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Folha de Pagamento</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1, h2 { color: #2c3e50; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button { background-color: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #219150; }
+        button.btn-danger { background-color: #e74c3c; }
+        button.btn-danger:hover { background-color: #c0392b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #34495e; color: white; }
+        .total-box { background-color: #e8f8f5; border-left: 5px solid #1abc9c; padding: 15px; margin-top: 15px; font-size: 18px; }
+        .alert { padding: 10px; border-radius: 4px; margin-bottom: 15px; display: none; }
+        .alert-error { background-color: #fadbd8; color: #78281f; border: 1px solid #f5b7b1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sistema de Folha de Pagamento</h1>
+
+    <!-- MENSAGEM DE ERRO -->
+    <div id="alertError" class="alert alert-error"></div>
+
+    <!-- CADASTRO DE COLABORADOR (RF001 a RF004) -->
+    <div class="card">
+        <h2>Cadastrar Colaborador</h2>
+        <form id="formCadastro">
+            <div class="grid">
+                <div class="form-group">
+                    <label>Matrícula (RN001):</label>
+                    <input type="text" id="matricula" required>
+                </div>
+                <div class="form-group">
+                    <label>Nome Completo (RN002):</label>
+                    <input type="text" id="nome" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Categoria do Colaborador:</label>
+                <select id="tipo" onchange="alternarCampos()">
+                    <option value="Padrao">Padrão (Mensalista)</option>
+                    <option value="Comissionado">Comissionado</option>
+                    <option value="Producao">Por Produção</option>
+                </select>
+            </div>
+
+            <!-- CAMPOS DINÂMICOS -->
+            <div class="grid">
+                <div class="form-group" id="groupSalarioBase">
+                    <label>Salário Base (R$):</label>
+                    <input type="number" step="0.01" id="salarioBase" value="0">
+                </div>
+                <div class="form-group" id="groupVendas" style="display:none;">
+                    <label>Total de Vendas (R$):</label>
+                    <input type="number" step="0.01" id="vendas" value="0">
+                </div>
+                <div class="form-group" id="groupComissao" style="display:none;">
+                    <label>Comissão (%):</label>
+                    <input type="number" step="0.01" id="comissao" value="0">
+                </div>
+                <div class="form-group" id="groupQtdProduzida" style="display:none;">
+                    <label>Qtd. Produzida:</label>
+                    <input type="number" id="qtdProduzida" value="0">
+                </div>
+                <div class="form-group" id="groupValorUnidade" style="display:none;">
+                    <label>Valor por Unidade (R$):</label>
+                    <input type="number" step="0.01" id="valorUnidade" value="0">
+                </div>
+            </div>
+
+            <button type="submit">Cadastrar Colaborador</button>
+        </form>
+    </div>
+
+    <!-- RELATÓRIO CONSOLIDADO E RESUMO (RF007 e RF008) -->
+    <div class="card">
+        <h2>Resumo Consolidado da Folha de Pagamento</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Matrícula</th>
+                    <th>Nome</th>
+                    <th>Tipo</th>
+                    <th>Salário Bruto</th>
+                    <th>INSS</th>
+                    <th>IRRF</th>
+                    <th>Salário Líquido</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+
+        <div class="total-box">
+            <strong>TOTAL GERAL DA FOLHA (LÍQUIDO): </strong>
+            <span id="totalGeral">R$ 0,00</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:5000/api/colaboradores";
+
+    function alternarCampos() {
+        const tipo = document.getElementById("tipo").value;
+        document.getElementById("groupSalarioBase").style.display = (tipo === "Producao") ? "none" : "block";
+        document.getElementById("groupVendas").style.display = (tipo === "Comissionado") ? "block" : "none";
+        document.getElementById("groupComissao").style.display = (tipo === "Comissionado") ? "block" : "none";
+        document.getElementById("groupQtdProduzida").style.display = (tipo === "Producao") ? "block" : "none";
+        document.getElementById("groupValorUnidade").style.display = (tipo === "Producao") ? "block" : "none";
+    }
+
+    async function carregarTabela() {
+        try {
+            const res = await fetch(API_URL);
+            const dados = await res.json();
+            
+            const tbody = document.getElementById("tabelaCorpo");
+            tbody.innerHTML = "";
+            let totalLiquido = 0;
+
+            dados.forEach(c => {
+                totalLiquido += c.liquido;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${c.matricula}</td>
+                    <td>${c.nome}</td>
+                    <td>${c.tipo}</td>
+                    <td>R$ ${c.bruto.toFixed(2)}</td>
+                    <td>R$ ${c.inss.toFixed(2)}</td>
+                    <td>R$ ${c.irrf.toFixed(2)}</td>
+                    <td><strong>R$ ${c.liquido.toFixed(2)}</strong></td>
+                    <td>
+                        <button class="btn-danger" onclick="excluir('${c.matricula}')">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById("totalGeral").innerText = `R$ ${totalLiquido.toFixed(2)}`;
+        } catch (e) {
+            exibirErro("Erro ao conectar com o backend. Verifique se o servidor Python/Flask está rodando.");
+        }
+    }
+
+    document.getElementById("formCadastro").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        ocultarErro();
+
+        const payload = {
+            matricula: document.getElementById("matricula").value,
+            nome: document.getElementById("nome").value,
+            tipo: document.getElementById("tipo").value,
+            salario_base: document.getElementById("salarioBase").value,
+            vendas: document.getElementById("vendas").value,
+            comissao_pct: document.getElementById("comissao").value,
+            qtd_produzida: document.getElementById("qtdProduzida").value,
+            valor_unidade: document.getElementById("valorUnidade").value
+        };
+
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            exibirErro(data.erro);
+        } else {
+            document.getElementById("formCadastro").reset();
+            alternarCampos();
+            carregarTabela();
+        }
+    });
+
+    async function excluir(matricula) {
+        if (confirm(`Deseja remover o colaborador ${matricula}?`)) {
+            await fetch(`${API_URL}/${matricula}`, { method: "DELETE" });
+            carregarTabela();
+        }
+    }
+
+    function exibirErro(msg) {
+        const el = document.getElementById("alertError");
+        el.innerText = msg;
+        el.style.display = "block";
+    }
+
+    function ocultarErro() {
+        document.getElementById("alertError").style.display = "none";
+    }
+
+    // Inicialização
+    carregarTabela();
+</script>
+
+</body>
+</html>

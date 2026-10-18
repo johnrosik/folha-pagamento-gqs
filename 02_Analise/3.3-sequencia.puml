@@ -1,0 +1,42 @@
+@startuml
+autonumber
+actor "Usuário/Gestor" as Usuario
+participant "Interface (CLI / Web)" as Interface
+participant "SistemaFolha" as Sistema
+participant "Colaborador\n(Padrao/Comissionado/Producao)" as Model
+database "JSON\n(colaboradores.json)" as DB
+
+== Cadastro de Colaborador ==
+
+Usuario -> Interface: Preenche formulário e clica em Cadastrar
+Interface -> Model: Instancia Colaborador (Valida RN002-RN007)
+
+alt Dados Inválidos (ex: valores negativos)
+    Model --> Interface: Retorna erro (ValidacaoError)
+    Interface --> Usuario: Exibe mensagem de erro
+else Dados Válidos
+    Model --> Interface: Objeto criado com sucesso
+    Interface -> Sistema: cadastrar(colaborador)
+    Sistema -> Sistema: Valida matrícula única (RN001)
+    Sistema -> DB: salvar_dados() em JSON (RNF003)
+    Sistema --> Interface: Confirmação de Cadastro
+    Interface --> Usuario: Exibe mensagem de sucesso
+end
+
+== Emissão de Resumo Consolidado ==
+
+Usuario -> Interface: Solicita Resumo da Folha (RF008)
+Interface -> Sistema: emitir_resumo_folha()
+
+loop Para cada Colaborador cadastrado
+    Sistema -> Model: calcular_salario_bruto()
+    Sistema -> Model: calcular_inss() / calcular_irrf()
+    Sistema -> Model: calcular_salario_liquido()
+    Model --> Sistema: Retorna valores calculados
+end
+
+Sistema -> Sistema: Acumula totais gerais da folha
+Sistema --> Interface: Retorna lista e totais calculados
+Interface --> Usuario: Exibe relatório consolidado na tela
+
+@enduml

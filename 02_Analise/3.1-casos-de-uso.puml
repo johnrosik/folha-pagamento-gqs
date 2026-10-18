@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuário / Gestor" as User
+
+rectangle "Sistema de Folha de Pagamento" {
+    usecase "RF001/002/003/004: Cadastrar Colaborador" as UC1
+    usecase "RF005: Consultar Colaboradores" as UC2
+    usecase "RF009: Manter/Excluir Cadastros" as UC3
+    usecase "RF006/007: Gerar Folha Individual / Holerite" as UC4
+    usecase "RF008: Emitir Resumo Consolidado da Folha" as UC5
+}
+
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+@enduml

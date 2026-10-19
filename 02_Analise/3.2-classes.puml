@@ -1,0 +1,52 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+abstract class Colaborador {
+    + String matricula
+    + String nome
+    + {abstract} calcular_salario_bruto(): float
+    + calcular_inss(): float
+    + calcular_irrf(): float
+    + calcular_salario_liquido(): float
+    + {abstract} to_dict(): dict
+}
+
+class ColaboradorPadrao {
+    + float salario_base
+    + calcular_salario_bruto(): float
+    + to_dict(): dict
+}
+
+class ColaboradorComissionado {
+    + float salario_base
+    + float vendas
+    + float comissao_pct
+    + calcular_salario_bruto(): float
+    + to_dict(): dict
+}
+
+class ColaboradorProducao {
+    + int qtd_produzida
+    + float valor_unidade
+    + calcular_salario_bruto(): float
+    + to_dict(): dict
+}
+
+class SistemaFolha {
+    + dict colaboradores
+    + String arquivo_db
+    + cadastrar(c: Colaborador)
+    + consultar(matricula: String): Colaborador
+    + excluir(matricula: String)
+    + gerar_folha_individual(matricula: String)
+    + emitir_resumo_folha()
+    + salvar_dados()
+    + carregar_dados()
+}
+
+Colaborador <|-- ColaboradorPadrao : Herda
+Colaborador <|-- ColaboradorComissionado : Herda
+Colaborador <|-- ColaboradorProducao : Herda
+SistemaFolha "1" *-- "0..*" Colaborador : Gerencia
+
+@enduml

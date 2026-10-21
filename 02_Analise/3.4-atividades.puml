@@ -1,0 +1,25 @@
+@startuml
+start
+repeat
+  :Cadastrar colaborador;
+  switch (Qual é a categoria do colaborador?)
+  case (Padrão)
+    :Obter salário base (RN003);
+    :Salário bruto = salário base;
+  case (Comissionado)
+    :Obter salário base, vendas e comissão (RN003 a RN005);
+    :Salário bruto = salário base + vendas × comissão;
+  case (Produção)
+    :Obter quantidade e valor por unidade (RN006, RN007);
+    :Salário bruto = quantidade × valor por unidade;
+  endswitch
+  :Calcular INSS sobre o salário bruto (RF010);
+  :Calcular IRRF sobre a base tributável (RF010);
+  :Calcular salário líquido (bruto − INSS − IRRF);
+  :Acumular valores para o resumo;
+repeat while (Existem mais colaboradores?) is (sim) not (não)
+:Gerar folha individual (RF007);
+:Emitir resumo com o total geral da folha (RF008);
+:Apresentar os resultados na interface (CLI / Web);
+stop
+@enduml

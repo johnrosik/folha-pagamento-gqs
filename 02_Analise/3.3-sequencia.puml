@@ -1,42 +1,34 @@
 @startuml
 autonumber
 actor "Usuário/Gestor" as Usuario
-participant "Interface (CLI / Web)" as Interface
+participant "Interface\n(CLI / Web)" as Interface
 participant "SistemaFolha" as Sistema
 participant "Colaborador\n(Padrao/Comissionado/Producao)" as Model
-database "JSON\n(colaboradores.json)" as DB
-
+database "SQLite\n(folha.db)" as DB
 == Cadastro de Colaborador ==
-
-Usuario -> Interface: Preenche formulário e clica em Cadastrar
-Interface -> Model: Instancia Colaborador (Valida RN002-RN007)
-
-alt Dados Inválidos (ex: valores negativos)
-    Model --> Interface: Retorna erro (ValidacaoError)
-    Interface --> Usuario: Exibe mensagem de erro
-else Dados Válidos
-    Model --> Interface: Objeto criado com sucesso
-    Interface -> Sistema: cadastrar(colaborador)
-    Sistema -> Sistema: Valida matrícula única (RN001)
-    Sistema -> DB: salvar_dados() em JSON (RNF003)
-    Sistema --> Interface: Confirmação de Cadastro
-    Interface --> Usuario: Exibe mensagem de sucesso
+Usuario -> Interface: Preenche o formulário e clica em Cadastrar
+Interface -> Model: Instancia Colaborador (valida RN002 a RN007)
+alt Dados inválidos (ex.: valores negativos)
+  Model --> Interface: Retorna erro (ValidacaoError)
+  Interface --> Usuario: Exibe mensagem de erro
+else Dados válidos
+  Model --> Interface: Objeto criado com sucesso
+  Interface -> Sistema: cadastrar(colaborador)
+  Sistema -> Sistema: Valida matrícula única (RN001)
+  Sistema -> DB: salvar() no SQLite (RNF003)
+  Sistema --> Interface: Confirmação do cadastro
+  Interface --> Usuario: Exibe mensagem de sucesso
 end
-
-== Emissão de Resumo Consolidado ==
-
-Usuario -> Interface: Solicita Resumo da Folha (RF008)
+== Emissão do Resumo Consolidado ==
+Usuario -> Interface: Solicita o resumo da folha (RF008)
 Interface -> Sistema: emitir_resumo_folha()
-
-loop Para cada Colaborador cadastrado
-    Sistema -> Model: calcular_salario_bruto()
-    Sistema -> Model: calcular_inss() / calcular_irrf()
-    Sistema -> Model: calcular_salario_liquido()
-    Model --> Sistema: Retorna valores calculados
+loop Para cada colaborador cadastrado
+  Sistema -> Model: calcular_salario_bruto()
+  Sistema -> Model: calcular_inss() / calcular_irrf()
+  Sistema -> Model: calcular_salario_liquido()
+  Model --> Sistema: Retorna os valores calculados
 end
-
-Sistema -> Sistema: Acumula totais gerais da folha
-Sistema --> Interface: Retorna lista e totais calculados
-Interface --> Usuario: Exibe relatório consolidado na tela
-
+Sistema -> Sistema: Acumula os totais gerais da folha
+Sistema --> Interface: Retorna a lista e os totais
+Interface --> Usuario: Exibe o relatório consolidado
 @enduml

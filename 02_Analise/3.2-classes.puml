@@ -2,51 +2,65 @@
 skinparam classAttributeIconSize 0
 
 abstract class Colaborador {
-    + String matricula
-    + String nome
+    + matricula: str
+    + nome: str
     + {abstract} calcular_salario_bruto(): float
     + calcular_inss(): float
     + calcular_irrf(): float
     + calcular_salario_liquido(): float
-    + {abstract} to_dict(): dict
 }
 
 class ColaboradorPadrao {
-    + float salario_base
+    + salario_base: float
     + calcular_salario_bruto(): float
-    + to_dict(): dict
 }
 
 class ColaboradorComissionado {
-    + float salario_base
-    + float vendas
-    + float comissao_pct
+    + salario_base: float
+    + vendas: float
+    + comissao_pct: float
     + calcular_salario_bruto(): float
-    + to_dict(): dict
 }
+note bottom of ColaboradorComissionado
+  bruto = salario_base + vendas × comissao_pct ÷ 100
+end note
 
 class ColaboradorProducao {
-    + int qtd_produzida
-    + float valor_unidade
+    + salario_base: float
+    + qtd_produzida: int
+    + valor_unidade: float
     + calcular_salario_bruto(): float
-    + to_dict(): dict
 }
+note bottom of ColaboradorProducao
+  bruto = salario_base + qtd_produzida × valor_unidade
+end note
 
 class SistemaFolha {
-    + dict colaboradores
-    + String arquivo_db
     + cadastrar(c: Colaborador)
-    + consultar(matricula: String): Colaborador
-    + excluir(matricula: String)
-    + gerar_folha_individual(matricula: String)
-    + emitir_resumo_folha()
-    + salvar_dados()
-    + carregar_dados()
+    + consultar(matricula: str): Colaborador
+    + listar(): list
+    + alterar(matricula: str, dados: dict)
+    + excluir(matricula: str)
+    + gerar_folha_individual(matricula: str): dict
+    + emitir_resumo_folha(): dict
 }
 
-Colaborador <|-- ColaboradorPadrao : Herda
-Colaborador <|-- ColaboradorComissionado : Herda
-Colaborador <|-- ColaboradorProducao : Herda
-SistemaFolha "1" *-- "0..*" Colaborador : Gerencia
+class RepositorioSQLite {
+    + caminho_banco: str
+    + inserir(c: Colaborador)
+    + buscar(matricula: str): Colaborador
+    + listar(): list
+    + atualizar(c: Colaborador)
+    + remover(matricula: str)
+}
 
+class ValidacaoError
+
+Colaborador <|-- ColaboradorPadrao
+Colaborador <|-- ColaboradorComissionado
+Colaborador <|-- ColaboradorProducao
+SistemaFolha --> RepositorioSQLite : usa
+SistemaFolha ..> Colaborador : gerencia
+RepositorioSQLite ..> Colaborador : grava e restaura
+Colaborador ..> ValidacaoError : lança (RN002 a RN007)
 @enduml

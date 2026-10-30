@@ -7,11 +7,11 @@ repeat
     :Obter salário base (RN003);
     :Salário bruto = salário base;
   case (Comissionado)
-    :Obter salário base, vendas e comissão (RN003 a RN005);
-    :Salário bruto = salário base + vendas × comissão;
+    :Obter salário base, vendas e comissão (RN003 a RN005; comissão em %);
+    :Salário bruto = salário base + vendas × comissão ÷ 100;
   case (Produção)
-    :Obter quantidade e valor por unidade (RN006, RN007);
-    :Salário bruto = quantidade × valor por unidade;
+    :Obter salário base, quantidade e valor por unidade (RN003, RN006, RN007);
+    :Salário bruto = salário base + quantidade × valor por unidade;
   endswitch
   :Calcular INSS sobre o salário bruto (RF010);
   :Calcular IRRF sobre a base tributável (RF010);

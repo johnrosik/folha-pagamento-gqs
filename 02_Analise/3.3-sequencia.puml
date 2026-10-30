@@ -4,6 +4,7 @@ actor "Usuário/Gestor" as Usuario
 participant "Interface\n(CLI / Web)" as Interface
 participant "SistemaFolha" as Sistema
 participant "Colaborador\n(Padrao/Comissionado/Producao)" as Model
+participant "RepositorioSQLite" as Repo
 database "SQLite\n(folha.db)" as DB
 == Cadastro de Colaborador ==
 Usuario -> Interface: Preenche o formulário e clica em Cadastrar
@@ -15,13 +16,17 @@ else Dados válidos
   Model --> Interface: Objeto criado com sucesso
   Interface -> Sistema: cadastrar(colaborador)
   Sistema -> Sistema: Valida matrícula única (RN001)
-  Sistema -> DB: salvar() no SQLite (RNF003)
+  Sistema -> Repo: inserir(colaborador)
+  Repo -> DB: INSERT com parâmetros (RNF003)
   Sistema --> Interface: Confirmação do cadastro
   Interface --> Usuario: Exibe mensagem de sucesso
 end
 == Emissão do Resumo Consolidado ==
 Usuario -> Interface: Solicita o resumo da folha (RF008)
 Interface -> Sistema: emitir_resumo_folha()
+Sistema -> Repo: listar()
+Repo -> DB: SELECT
+Repo --> Sistema: colaboradores
 loop Para cada colaborador cadastrado
   Sistema -> Model: calcular_salario_bruto()
   Sistema -> Model: calcular_inss() / calcular_irrf()

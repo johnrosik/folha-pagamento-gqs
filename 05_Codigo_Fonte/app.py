@@ -17,7 +17,7 @@ DATA_FILE = Path(__file__).resolve().parent / "colaboradores.json"
 sistema = SistemaFolha(str(DATA_FILE))
 
 
-@app.get("/")
+@app.get("/") 
 def index():
     return send_from_directory(BASE_DIR, "index.html")
 

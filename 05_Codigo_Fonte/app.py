@@ -43,7 +43,7 @@ def listar_colaboradores():
 
 @app.post("/api/colaboradores")
 def cadastrar_colaborador():
-    dados = request.get_json(silent=True)
+    dados = request.get_json(silent=True) 
     if not isinstance(dados, dict):
         return jsonify({"erro": "Envie os dados do colaborador em formato JSON."}), 400
 

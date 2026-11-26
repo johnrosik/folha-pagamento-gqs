@@ -40,9 +40,13 @@ class TestColaboradores(unittest.TestCase):
         self.assertEqual(colaborador.calcular_salario_bruto(), 2500)
 
     def test_colaborador_producao_calcula_salario_bruto(self):
-        colaborador = ColaboradorProducao("004", "Dora", 120, 15)
+        # CT R01 (ERS v1.1): salário base 1.500 + 500 unidades x R$ 10,00
+        colaborador = ColaboradorProducao("004", "Dora", 1500, 500, 10)
 
-        self.assertEqual(colaborador.calcular_salario_bruto(), 1800)
+        self.assertEqual(colaborador.calcular_salario_bruto(), 6500)
+        self.assertAlmostEqual(colaborador.calcular_inss(), 650)
+        self.assertAlmostEqual(colaborador.calcular_irrf(), 438.75)
+        self.assertAlmostEqual(colaborador.calcular_salario_liquido(), 5411.25)
 
     def test_nome_vazio_e_rejeitado(self):
         with self.assertRaises(ValidacaoError):
@@ -54,8 +58,9 @@ class TestColaboradores(unittest.TestCase):
             lambda: ColaboradorComissionado("007", "Fábio", -1, 0, 0),
             lambda: ColaboradorComissionado("008", "Gabi", 0, -1, 0),
             lambda: ColaboradorComissionado("009", "Hugo", 0, 0, -1),
-            lambda: ColaboradorProducao("010", "Iara", -1, 0),
-            lambda: ColaboradorProducao("011", "João", 0, -1),
+            lambda: ColaboradorProducao("010", "Iara", 0, -1, 0),
+            lambda: ColaboradorProducao("011", "João", 0, 0, -1),
+            lambda: ColaboradorProducao("012", "Kátia", -1, 0, 0),
         )
 
         for criar_colaborador in casos:
@@ -90,11 +95,37 @@ class TestSistemaFolha(unittest.TestCase):
         with self.assertRaises(ValidacaoError):
             self.sistema.excluir("999")
 
+    def test_altera_cadastro_e_recalcula_folha(self):
+        # CT "P01 alterado": salário de 3.000 para 3.500
+        self.sistema.cadastrar(ColaboradorPadrao("P01", "Paula", 3000))
+
+        self.sistema.alterar(ColaboradorPadrao("P01", "Paula Souza", 3500))
+
+        alterado = self.sistema.consultar("P01")
+        self.assertEqual(alterado.nome, "Paula Souza")
+        self.assertEqual(alterado.calcular_salario_bruto(), 3500)
+        self.assertAlmostEqual(alterado.calcular_salario_liquido(), 2913.75)
+        self.assertEqual(SistemaFolha(str(self.arquivo_db)).consultar("P01").calcular_salario_bruto(), 3500)
+
+    def test_alterar_matricula_inexistente_e_rejeitado(self):
+        with self.assertRaises(ValidacaoError):
+            self.sistema.alterar(ColaboradorPadrao("999", "Ninguém", 1000))
+
+    def test_registro_antigo_de_producao_sem_salario_base_carrega_com_zero(self):
+        self.arquivo_db.write_text(
+            '[{"tipo": "Producao", "matricula": "R9", "nome": "Rui", "qtd_produzida": 10, "valor_unidade": 5}]',
+            encoding="utf-8",
+        )
+
+        sistema = SistemaFolha(str(self.arquivo_db))
+
+        self.assertEqual(sistema.consultar("R9").calcular_salario_bruto(), 50)
+
     def test_salva_e_recarrega_todos_os_tipos_de_colaborador(self):
         colaboradores = (
             ColaboradorPadrao("001", "Ana", 2000),
             ColaboradorComissionado("002", "Beto", 1500, 5000, 4),
-            ColaboradorProducao("003", "Cris", 100, 12),
+            ColaboradorProducao("003", "Cris", 1000, 100, 12),
         )
         for colaborador in colaboradores:
             self.sistema.cadastrar(colaborador)
@@ -121,7 +152,7 @@ class TestSistemaFolha(unittest.TestCase):
 
     def test_resumo_indica_total_de_colaboradores(self):
         self.sistema.cadastrar(ColaboradorPadrao("001", "Ana", 2000))
-        self.sistema.cadastrar(ColaboradorProducao("002", "Beto", 100, 10))
+        self.sistema.cadastrar(ColaboradorProducao("002", "Beto", 1000, 100, 10))
         saida = io.StringIO()
 
         with contextlib.redirect_stdout(saida):
@@ -157,7 +188,7 @@ class TestMenu(unittest.TestCase):
             entradas = (
                 "1", "CLI-1", "Alice", "1000",
                 "2", "CLI-2", "Bruno", "1500", "5000", "10",
-                "3", "CLI-3", "Carla", "100", "12",
+                "3", "CLI-3", "Carla", "1000", "100", "12",
                 "4", "CLI-1",
                 "4", "NAO-EXISTE",
                 "5", "CLI-1",
@@ -165,6 +196,9 @@ class TestMenu(unittest.TestCase):
                 "6",
                 "7", "CLI-2",
                 "7", "NAO-EXISTE",
+                "8", "CLI-1", "Alice Lima", "1200",
+                "8", "CLI-3", "Carla", "1500", "100", "12",
+                "8", "NAO-EXISTE",
                 "9",
                 "0",
             )
@@ -184,6 +218,9 @@ class TestMenu(unittest.TestCase):
             self.assertIn("[ENCONTRADO] Nome: Alice", texto)
             self.assertIn("[FALHA DE VALIDAÇÃO]", texto)
             self.assertIn("Opção inválida!", texto)
+            self.assertIn("[SUCESSO] Cadastro alterado!", texto)
+            self.assertEqual(sistema.consultar("CLI-1").calcular_salario_bruto(), 1200)
+            self.assertEqual(sistema.consultar("CLI-3").calcular_salario_bruto(), 2700)
             self.assertIn("Saindo do sistema.", texto)
 
 

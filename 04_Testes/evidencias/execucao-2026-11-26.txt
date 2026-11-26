@@ -1,0 +1,60 @@
+============================= test session starts =============================
+platform win32 -- Python 3.15.1, pytest-9.2.0, pluggy-1.7.0 -- <ambiente>
+rootdir: <ambiente>
+configfile: pytest.ini
+plugins: anyio-4.16.0, asyncio-1.5.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collecting ... collected 48 items
+
+test_folhadepagamento.py::TestColaboradores::test_colaborador_comissionado_calcula_salario_bruto PASSED [  2%]
+test_folhadepagamento.py::TestColaboradores::test_colaborador_padrao_calcula_salario_e_descontos PASSED [  4%]
+test_folhadepagamento.py::TestColaboradores::test_colaborador_producao_calcula_salario_bruto PASSED [  6%]
+test_folhadepagamento.py::TestColaboradores::test_nao_calcula_irrf_abaixo_do_limite PASSED [  8%]
+test_folhadepagamento.py::TestColaboradores::test_nome_vazio_e_rejeitado PASSED [ 10%]
+test_folhadepagamento.py::TestColaboradores::test_valores_negativos_sao_rejeitados 
+test_folhadepagamento.py::TestColaboradores::test_valores_negativos_sao_rejeitados PASSED [ 12%]
+test_folhadepagamento.py::TestSistemaFolha::test_altera_cadastro_e_recalcula_folha PASSED [ 14%]
+test_folhadepagamento.py::TestSistemaFolha::test_alterar_matricula_inexistente_e_rejeitado PASSED [ 16%]
+test_folhadepagamento.py::TestSistemaFolha::test_arquivo_json_invalido_exibe_aviso PASSED [ 18%]
+test_folhadepagamento.py::TestSistemaFolha::test_cadastra_consulta_e_impede_matricula_duplicada PASSED [ 20%]
+test_folhadepagamento.py::TestSistemaFolha::test_exclui_colaborador_e_rejeita_matricula_inexistente PASSED [ 22%]
+test_folhadepagamento.py::TestSistemaFolha::test_registro_antigo_de_producao_sem_salario_base_carrega_com_zero PASSED [ 25%]
+test_folhadepagamento.py::TestSistemaFolha::test_relatorio_individual_contem_salario_e_identificacao PASSED [ 27%]
+test_folhadepagamento.py::TestSistemaFolha::test_relatorios_informam_quando_nao_ha_colaborador PASSED [ 29%]
+test_folhadepagamento.py::TestSistemaFolha::test_resumo_indica_total_de_colaboradores PASSED [ 31%]
+test_folhadepagamento.py::TestSistemaFolha::test_salva_e_recarrega_todos_os_tipos_de_colaborador PASSED [ 33%]
+test_folhadepagamento.py::TestMenu::test_menu_executa_opcoes_e_trata_opcao_invalida PASSED [ 35%]
+test_folhadepagamento.py::TestLeituraDeEntradas::test_ler_float_tenta_novamente_apos_entrada_invalida PASSED [ 37%]
+test_folhadepagamento.py::TestLeituraDeEntradas::test_ler_int_tenta_novamente_apos_entrada_invalida PASSED [ 39%]
+test_integracao.py::TestApiFolha::test_alteracao_ignora_matricula_do_corpo PASSED [ 41%]
+test_integracao.py::TestApiFolha::test_alteracao_recalcula_e_persiste PASSED [ 43%]
+test_integracao.py::TestApiFolha::test_alterar_e_excluir_inexistente_respondem_404 PASSED [ 45%]
+test_integracao.py::TestApiFolha::test_cadastro_dos_tres_tipos_calcula_a_folha PASSED [ 47%]
+test_integracao.py::TestApiFolha::test_consulta_individual PASSED        [ 50%]
+test_integracao.py::TestApiFolha::test_entradas_malformadas_respondem_400 PASSED [ 52%]
+test_integracao.py::TestApiFolha::test_erros_de_validacao_respondem_400 
+test_integracao.py::TestApiFolha::test_erros_de_validacao_respondem_400 PASSED [ 54%]
+test_integracao.py::TestApiFolha::test_exclusao_remove_e_persiste PASSED [ 56%]
+test_integracao.py::TestApiFolha::test_pagina_inicial_e_servida PASSED   [ 58%]
+test_integracao.py::TestApiFolha::test_resumo_consolidado_bate_com_os_casos_de_teste PASSED [ 60%]
+test_interface.py::TestRegrasDaInterface::test_formata_moeda_brasileira PASSED [ 62%]
+test_interface.py::TestRegrasDaInterface::test_linha_da_tabela_traz_tipo_e_valores PASSED [ 64%]
+test_interface.py::TestRegrasDaInterface::test_matricula_obrigatoria_e_unica PASSED [ 66%]
+test_interface.py::TestRegrasDaInterface::test_monta_os_tres_tipos_com_os_valores_da_ers PASSED [ 68%]
+test_interface.py::TestRegrasDaInterface::test_montar_respeita_as_regras_do_dominio PASSED [ 70%]
+test_interface.py::TestRegrasDaInterface::test_nome_obrigatorio PASSED   [ 72%]
+test_interface.py::TestRegrasDaInterface::test_numero_obrigatorio_e_nao_negativo PASSED [ 75%]
+test_interface.py::TestRegrasDaInterface::test_resumo_da_folha_por_tipo PASSED [ 77%]
+test_telas.py::test_lista_mostra_colaboradores_e_valores PASSED          [ 79%]
+test_telas.py::test_menu_lateral_navega_entre_as_telas PASSED            [ 81%]
+test_telas.py::test_cadastro_vazio_marca_todos_os_campos_obrigatorios PASSED [ 83%]
+test_telas.py::test_matricula_repetida_e_recusada_na_hora PASSED         [ 85%]
+test_telas.py::test_cadastra_colaborador_por_producao PASSED             [ 87%]
+test_telas.py::test_valor_negativo_e_recusado PASSED                     [ 89%]
+test_telas.py::test_altera_cadastro PASSED                               [ 91%]
+test_telas.py::test_editar_matricula_inexistente PASSED                  [ 93%]
+test_telas.py::test_folha_individual PASSED                              [ 95%]
+test_telas.py::test_resumo_da_folha PASSED                               [ 97%]
+test_telas.py::test_excluir_pela_tabela_com_confirmacao PASSED           [100%]
+
+=================== 48 passed, 15 subtests passed in 2.83s ====================

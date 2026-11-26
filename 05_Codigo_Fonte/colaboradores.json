@@ -17,6 +17,7 @@
         "tipo": "Producao",
         "matricula": "3",
         "nome": "johan",
+        "salario_base": 0.0,
         "qtd_produzida": 1000,
         "valor_unidade": 12.0
     }

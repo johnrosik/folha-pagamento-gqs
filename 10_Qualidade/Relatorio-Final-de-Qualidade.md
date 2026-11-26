@@ -9,10 +9,10 @@
 
 | Indicador | Primeira validação (26/11, versão `73b2f6f`) | Depois das correções (26/11) |
 |---|---|---|
-| Testes automatizados | 16 de 16 | 48 de 48 (+15 subtestes) |
-| Cobertura (linhas e ramos) | 98% no domínio, 0% na API | 98% no domínio, na API e na interface |
-| Requisitos atendidos | 16 de 22 | 21 de 22 (RNF003 atendido com desvio documental, D03) |
-| Defeitos abertos | 4 | 1 (D03, decisão do grupo) |
+| Testes automatizados | 16 de 16 | 51 de 51 (+19 subtestes) |
+| Cobertura (linhas e ramos) | 98% no domínio, 0% na API | 97% (domínio 96%, API 98%, interface 98%) |
+| Requisitos atendidos | 16 de 22 | 22 de 22 |
+| Defeitos abertos | 4 | 0 |
 | Testes de aceitação | 13 de 14 | 18 de 18 |
 
 ## 2. O que foi corrigido
@@ -53,9 +53,9 @@ Detalhes e verificação: `10_Qualidade/Registro-de-Defeitos.md`.
 | RN008 Cálculo automático | Métodos de cálculo; a prévia da tela usa o próprio domínio | Atendido |
 | RNF001 Interface amigável | Menu de terminal e interface NiceGUI | Atendido |
 | RNF002 Validação antes do cálculo | Domínio, API e interface | Atendido |
-| RNF003 Persistência | Arquivo JSON | Atendido com desvio (D03) |
+| RNF003 Persistência | Banco SQLite (`financy.db`) | Atendido |
 | RNF004 Novos tipos sem alterar cálculos | Classe abstrata `Colaborador` | Atendido por implementação |
 
 ## 5. Conclusão
 
-O sistema atende aos requisitos funcionais e às regras de negócio da ERS v1.1, com 48 testes automatizados aprovados e 98% de cobertura. Antes da entrega, o grupo precisa decidir o D03: migrar para SQLite ou corrigir a arquitetura para JSON.
+O sistema atende aos requisitos funcionais e às regras de negócio da ERS v1.1, com 51 testes automatizados aprovados e 97% de cobertura. O D03 foi fechado com a migração para SQLite, como prevê a arquitetura da A1.

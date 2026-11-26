@@ -1,6 +1,6 @@
 """Interface web do Financy, escrita só em Python com NiceGUI (RNF001).
 
-Usa o mesmo domínio da folha (folhadepagamento.py) e o mesmo arquivo de dados.
+Usa o mesmo domínio da folha (folhadepagamento.py) e o mesmo banco SQLite (financy.db).
 Execução: python interface.py  →  http://localhost:8080
 """
 import os
@@ -12,13 +12,17 @@ from folhadepagamento import (
     ColaboradorComissionado,
     ColaboradorPadrao,
     ColaboradorProducao,
+    BANCO_PADRAO,
+    JSON_ANTIGO,
     SistemaFolha,
     ValidacaoError,
 )
 
-# FINANCY_DADOS permite apontar para outro arquivo (os testes de tela usam um temporário).
-DATA_FILE = Path(os.environ.get("FINANCY_DADOS", Path(__file__).resolve().parent / "colaboradores.json"))
-sistema = SistemaFolha(str(DATA_FILE))
+# FINANCY_DADOS aponta para outro banco (os testes de tela usam um temporário, sem migração).
+if os.environ.get("FINANCY_DADOS"):
+    sistema = SistemaFolha(os.environ["FINANCY_DADOS"])
+else:
+    sistema = SistemaFolha(BANCO_PADRAO, importar_json=JSON_ANTIGO)
 
 TIPOS = {"Padrao": "Padrão", "Comissionado": "Comissionado", "Producao": "Produção"}
 CORES_TIPO = {"Padrao": "blue", "Comissionado": "purple", "Producao": "teal"}

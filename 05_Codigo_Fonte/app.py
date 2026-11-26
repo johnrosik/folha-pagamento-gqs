@@ -6,6 +6,8 @@ from folhadepagamento import (
     ColaboradorComissionado,
     ColaboradorPadrao,
     ColaboradorProducao,
+    BANCO_PADRAO,
+    JSON_ANTIGO,
     SistemaFolha,
     ValidacaoError,
 )
@@ -13,8 +15,7 @@ from folhadepagamento import (
 
 app = Flask(__name__)
 BASE_DIR = Path(__file__).resolve().parent
-DATA_FILE = BASE_DIR / "colaboradores.json"
-sistema = SistemaFolha(str(DATA_FILE))
+sistema = SistemaFolha(BANCO_PADRAO, importar_json=JSON_ANTIGO)
 
 
 def serializar(colaborador):

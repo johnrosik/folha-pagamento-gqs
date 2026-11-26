@@ -1,5 +1,6 @@
 import contextlib
 import io
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -72,7 +73,7 @@ class TestColaboradores(unittest.TestCase):
 class TestSistemaFolha(unittest.TestCase):
     def setUp(self):
         self.diretorio_temporario = tempfile.TemporaryDirectory()
-        self.arquivo_db = Path(self.diretorio_temporario.name) / "colaboradores.json"
+        self.arquivo_db = Path(self.diretorio_temporario.name) / "financy.db"
         self.sistema = SistemaFolha(str(self.arquivo_db))
 
     def tearDown(self):
@@ -111,15 +112,59 @@ class TestSistemaFolha(unittest.TestCase):
         with self.assertRaises(ValidacaoError):
             self.sistema.alterar(ColaboradorPadrao("999", "Ninguém", 1000))
 
-    def test_registro_antigo_de_producao_sem_salario_base_carrega_com_zero(self):
-        self.arquivo_db.write_text(
-            '[{"tipo": "Producao", "matricula": "R9", "nome": "Rui", "qtd_produzida": 10, "valor_unidade": 5}]',
+    def test_migra_json_antigo_uma_vez_e_producao_sem_salario_base_vale_zero(self):
+        arquivo_json = Path(self.diretorio_temporario.name) / "colaboradores.json"
+        arquivo_json.write_text(
+            '[{"tipo": "Padrao", "matricula": "P9", "nome": "Pia", "salario_base": 2000},'
+            ' {"tipo": "Producao", "matricula": "R9", "nome": "Rui", "qtd_produzida": 10, "valor_unidade": 5}]',
             encoding="utf-8",
         )
+        banco = Path(self.diretorio_temporario.name) / "migrado.db"
 
-        sistema = SistemaFolha(str(self.arquivo_db))
-
+        sistema = SistemaFolha(str(banco), importar_json=str(arquivo_json))
         self.assertEqual(sistema.consultar("R9").calcular_salario_bruto(), 50)
+
+        sistema.excluir("P9")
+        reaberto = SistemaFolha(str(banco), importar_json=str(arquivo_json))
+        self.assertEqual(list(reaberto.colaboradores), ["R9"])  # não reimporta por cima do banco
+
+    def test_json_antigo_invalido_exibe_aviso_e_nao_importa(self):
+        arquivo_json = Path(self.diretorio_temporario.name) / "colaboradores.json"
+        arquivo_json.write_text("{", encoding="utf-8")
+        saida = io.StringIO()
+
+        with contextlib.redirect_stdout(saida):
+            sistema = SistemaFolha(str(Path(self.diretorio_temporario.name) / "outro.db"), importar_json=str(arquivo_json))
+
+        self.assertEqual(sistema.colaboradores, {})
+        self.assertIn("[AVISO] Não foi possível importar", saida.getvalue())
+
+    def test_banco_recusa_dado_invalido_gravado_por_fora_do_sistema(self):
+        self.sistema.cadastrar(ColaboradorPadrao("001", "Ana", 2000))
+        conexao = sqlite3.connect(self.arquivo_db)
+        try:
+            casos = (
+                "INSERT INTO colaboradores (matricula, tipo, nome, salario_base) VALUES ('001', 'Padrao', 'Dup', 1)",
+                "INSERT INTO colaboradores (matricula, tipo, nome, salario_base) VALUES ('X', 'Padrao', 'Neg', -1)",
+                "INSERT INTO colaboradores (matricula, tipo, nome, salario_base) VALUES ('Y', 'Padrao', '  ', 1)",
+                "INSERT INTO colaboradores (matricula, tipo, nome, salario_base) VALUES ('Z', 'Outro', 'Tipo', 1)",
+            )
+            for comando in casos:
+                with self.subTest(comando=comando):
+                    with self.assertRaises(sqlite3.IntegrityError):
+                        conexao.execute(comando)
+        finally:
+            conexao.close()
+
+    def test_alteracao_mantem_a_ordem_de_cadastro(self):
+        for matricula in ("A", "B", "C"):
+            self.sistema.cadastrar(ColaboradorPadrao(matricula, f"Pessoa {matricula}", 1000))
+        self.sistema.alterar(ColaboradorComissionado("A", "Pessoa A", 1000, 100, 10))
+
+        reaberto = SistemaFolha(str(self.arquivo_db))
+
+        self.assertEqual(list(reaberto.colaboradores), ["A", "B", "C"])
+        self.assertIsInstance(reaberto.consultar("A"), ColaboradorComissionado)
 
     def test_salva_e_recarrega_todos_os_tipos_de_colaborador(self):
         colaboradores = (
@@ -170,8 +215,8 @@ class TestSistemaFolha(unittest.TestCase):
         self.assertIn("[ERRO] Colaborador não encontrado.", saida.getvalue())
         self.assertIn("Nenhum colaborador cadastrado", saida.getvalue())
 
-    def test_arquivo_json_invalido_exibe_aviso(self):
-        self.arquivo_db.write_text("{", encoding="utf-8")
+    def test_banco_corrompido_exibe_aviso(self):
+        self.arquivo_db.write_text("isto não é um banco SQLite" * 100, encoding="utf-8")
         saida = io.StringIO()
 
         with contextlib.redirect_stdout(saida):
@@ -184,7 +229,7 @@ class TestSistemaFolha(unittest.TestCase):
 class TestMenu(unittest.TestCase):
     def test_menu_executa_opcoes_e_trata_opcao_invalida(self):
         with tempfile.TemporaryDirectory() as diretorio:
-            sistema = SistemaFolha(str(Path(diretorio) / "colaboradores.json"))
+            sistema = SistemaFolha(str(Path(diretorio) / "financy.db"))
             entradas = (
                 "1", "CLI-1", "Alice", "1000",
                 "2", "CLI-2", "Bruno", "1500", "5000", "10",

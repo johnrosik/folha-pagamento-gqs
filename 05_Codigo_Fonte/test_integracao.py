@@ -1,6 +1,6 @@
-"""Testes de integração (artefato 12): API Flask + domínio + persistência em arquivo.
+"""Testes de integração (artefato 12): API Flask + domínio + persistência em SQLite.
 
-Cada teste usa um arquivo JSON temporário; o colaboradores.json real nunca é tocado.
+Cada teste usa um banco SQLite temporário; o financy.db real nunca é tocado.
 Valores esperados vêm dos casos de teste da A1 (P01, C01, R01 e CT019).
 """
 import tempfile
@@ -18,7 +18,7 @@ R01 = {"matricula": "R01", "nome": "Rita", "tipo": "Producao", "salario_base": 1
 class TestApiFolha(unittest.TestCase):
     def setUp(self):
         self.diretorio = tempfile.TemporaryDirectory()
-        self.arquivo = Path(self.diretorio.name) / "colaboradores.json"
+        self.arquivo = Path(self.diretorio.name) / "financy.db"
         self.sistema_original = aplicacao.sistema
         aplicacao.sistema = SistemaFolha(str(self.arquivo))
         self.cliente = aplicacao.app.test_client()

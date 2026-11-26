@@ -14,7 +14,7 @@ class TestRegrasDaInterface(unittest.TestCase):
     def setUp(self):
         self.diretorio = tempfile.TemporaryDirectory()
         self.original = interface.sistema
-        interface.sistema = SistemaFolha(str(Path(self.diretorio.name) / "colaboradores.json"))
+        interface.sistema = SistemaFolha(str(Path(self.diretorio.name) / "financy.db"))
 
     def tearDown(self):
         interface.sistema = self.original

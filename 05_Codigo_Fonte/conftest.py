@@ -1,19 +1,16 @@
-import json
-
 import pytest
 
-pytest_plugins = ["nicegui.testing.user_plugin"]
+from folhadepagamento import ColaboradorComissionado, ColaboradorPadrao, SistemaFolha
 
-COLABORADORES = [
-    {"tipo": "Padrao", "matricula": "P01", "nome": "Paula Souza", "salario_base": 3000.0},
-    {"tipo": "Comissionado", "matricula": "C01", "nome": "Caio Martins", "salario_base": 2000.0, "vendas": 10000.0, "comissao_pct": 5.0},
-]
+pytest_plugins = ["nicegui.testing.user_plugin"]
 
 
 @pytest.fixture(autouse=True)
 def dados_temporarios(tmp_path, monkeypatch):
-    """As telas sempre usam um arquivo temporário; o colaboradores.json real nunca é tocado."""
-    arquivo = tmp_path / "colaboradores.json"
-    arquivo.write_text(json.dumps(COLABORADORES), encoding="utf-8")
-    monkeypatch.setenv("FINANCY_DADOS", str(arquivo))
-    return arquivo
+    """As telas sempre usam um banco SQLite temporário; o financy.db real nunca é tocado."""
+    banco = tmp_path / "financy.db"
+    sistema = SistemaFolha(str(banco))
+    sistema.cadastrar(ColaboradorPadrao("P01", "Paula Souza", 3000.0))
+    sistema.cadastrar(ColaboradorComissionado("C01", "Caio Martins", 2000.0, 10000.0, 5.0))
+    monkeypatch.setenv("FINANCY_DADOS", str(banco))
+    return banco

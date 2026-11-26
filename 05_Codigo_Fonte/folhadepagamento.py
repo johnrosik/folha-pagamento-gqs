@@ -1,6 +1,8 @@
 import json
 import os
+import sqlite3
 from abc import ABC, abstractmethod
+from contextlib import closing
 
 
 # ==========================================
@@ -47,7 +49,7 @@ class Colaborador(ABC):
 
     @abstractmethod
     def to_dict(self) -> dict:
-        """Converte objeto em dicionário para persistência em JSON (RNF003)."""
+        """Converte objeto em dicionário (persistência e API)."""
         pass
 
 
@@ -133,36 +135,98 @@ class ColaboradorProducao(Colaborador):
         }
 
 
+def colaborador_de_registro(item) -> Colaborador:
+    """Recria o colaborador a partir de um registro (linha do SQLite ou item do JSON antigo)."""
+    tipo = item["tipo"]
+    if tipo == "Padrao":
+        return ColaboradorPadrao(item["matricula"], item["nome"], item["salario_base"])
+    if tipo == "Comissionado":
+        return ColaboradorComissionado(item["matricula"], item["nome"], item["salario_base"], item["vendas"], item["comissao_pct"])
+    if tipo == "Producao":
+        # Registros gravados antes da correção D01 não têm salário base: valem 0.
+        salario_base = item["salario_base"] if "salario_base" in item.keys() else 0
+        return ColaboradorProducao(item["matricula"], item["nome"], salario_base or 0, item["qtd_produzida"], item["valor_unidade"])
+    raise ValidacaoError(f"Tipo de colaborador desconhecido: {tipo}")
+
+
 # ==========================================
-# GERENCIADOR DA FOLHA E PERSISTÊNCIA (RNF003)
+# GERENCIADOR DA FOLHA E PERSISTÊNCIA EM SQLITE (RNF003)
 # ==========================================
 
+# As restrições repetem as regras de negócio no próprio banco: mesmo um INSERT feito
+# fora do sistema não grava matrícula repetida, nome vazio nem valor negativo.
+ESQUEMA = """
+CREATE TABLE IF NOT EXISTS colaboradores (
+    matricula     TEXT PRIMARY KEY,
+    tipo          TEXT NOT NULL CHECK (tipo IN ('Padrao', 'Comissionado', 'Producao')),
+    nome          TEXT NOT NULL CHECK (length(trim(nome)) > 0),
+    salario_base  REAL NOT NULL DEFAULT 0 CHECK (salario_base >= 0),
+    vendas        REAL CHECK (vendas >= 0),
+    comissao_pct  REAL CHECK (comissao_pct >= 0),
+    qtd_produzida INTEGER CHECK (qtd_produzida >= 0),
+    valor_unidade REAL CHECK (valor_unidade >= 0)
+)
+"""
+
+PASTA = os.path.dirname(os.path.abspath(__file__))
+BANCO_PADRAO = os.path.join(PASTA, "financy.db")
+JSON_ANTIGO = os.path.join(PASTA, "colaboradores.json")
+
+COLUNAS = ("matricula", "tipo", "nome", "salario_base", "vendas", "comissao_pct", "qtd_produzida", "valor_unidade")
+
+
 class SistemaFolha:
-    def __init__(self, arquivo_db="colaboradores.json"):
+    def __init__(self, arquivo_db="financy.db", importar_json=None):
         self.arquivo_db = arquivo_db
         self.colaboradores: dict[str, Colaborador] = {}
         self.carregar_dados()
+        if importar_json and not self.colaboradores:
+            self.importar_json(importar_json)
+
+    def _conectar(self):
+        conexao = sqlite3.connect(self.arquivo_db)
+        conexao.row_factory = sqlite3.Row
+        return closing(conexao)
+
+    @staticmethod
+    def _valores(colab: Colaborador) -> tuple:
+        dados = colab.to_dict()
+        return tuple(dados.get(coluna) for coluna in COLUNAS)
 
     def cadastrar(self, colab: Colaborador):
         """RF001 & RN001: Cadastro garantindo matrícula única."""
+        mensagem = f"RN001: Toda matrícula deverá ser única. A matrícula '{colab.matricula}' já existe."
         if colab.matricula in self.colaboradores:
-            raise ValidacaoError(f"RN001: Toda matrícula deverá ser única. A matrícula '{colab.matricula}' já existe.")
+            raise ValidacaoError(mensagem)
+        try:
+            with self._conectar() as conexao, conexao:
+                conexao.execute(
+                    f"INSERT INTO colaboradores ({', '.join(COLUNAS)}) VALUES ({', '.join('?' * len(COLUNAS))})",
+                    self._valores(colab),
+                )
+        except sqlite3.IntegrityError as erro:
+            raise ValidacaoError(mensagem) from erro
         self.colaboradores[colab.matricula] = colab
-        self.salvar_dados()
 
     def excluir(self, matricula: str):
         """RF009: Manutenção de Cadastros (Remoção)."""
         if matricula not in self.colaboradores:
             raise ValidacaoError("Colaborador não encontrado.")
+        with self._conectar() as conexao, conexao:
+            conexao.execute("DELETE FROM colaboradores WHERE matricula = ?", (matricula,))
         del self.colaboradores[matricula]
-        self.salvar_dados()
 
     def alterar(self, colab: Colaborador):
         """RF009: Manutenção de Cadastros (Alteração). A matrícula identifica o registro e não muda."""
         if colab.matricula not in self.colaboradores:
             raise ValidacaoError("Colaborador não encontrado.")
+        campos = COLUNAS[1:]
+        with self._conectar() as conexao, conexao:
+            conexao.execute(
+                f"UPDATE colaboradores SET {', '.join(f'{c} = ?' for c in campos)} WHERE matricula = ?",
+                self._valores(colab)[1:] + (colab.matricula,),
+            )
         self.colaboradores[colab.matricula] = colab
-        self.salvar_dados()
 
     def consultar(self, matricula: str) -> Colaborador:
         """RF005: Consulta de Colaboradores."""
@@ -229,31 +293,32 @@ class SistemaFolha:
         print(f"TOTAL GERAL DA FOLHA (LÍQ):   R$ {tot_liquido:14.2f}")
         print("#" * 65)
 
-    def salvar_dados(self):
-        """RNF003: Persistência de Dados em arquivo JSON."""
-        dados = [c.to_dict() for c in self.colaboradores.values()]
-        with open(self.arquivo_db, "w", encoding="utf-8") as f:
-            json.dump(dados, f, indent=4, ensure_ascii=False)
-
     def carregar_dados(self):
-        """RNF003: Restauração automática dos dados."""
-        if not os.path.exists(self.arquivo_db):
-            return
+        """RNF003: Cria a tabela na primeira execução e restaura os dados gravados."""
         try:
-            with open(self.arquivo_db, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                for item in dados:
-                    tipo = item["tipo"]
-                    if tipo == "Padrao":
-                        c = ColaboradorPadrao(item["matricula"], item["nome"], item["salario_base"])
-                    elif tipo == "Comissionado":
-                        c = ColaboradorComissionado(item["matricula"], item["nome"], item["salario_base"], item["vendas"], item["comissao_pct"])
-                    elif tipo == "Producao":
-                        # Registros gravados antes da correção não têm salário base: valem 0.
-                        c = ColaboradorProducao(item["matricula"], item["nome"], item.get("salario_base", 0), item["qtd_produzida"], item["valor_unidade"])
-                    self.colaboradores[c.matricula] = c
-        except Exception:
+            with self._conectar() as conexao, conexao:
+                conexao.execute(ESQUEMA)
+                linhas = conexao.execute("SELECT * FROM colaboradores ORDER BY rowid").fetchall()
+            for linha in linhas:
+                c = colaborador_de_registro(linha)
+                self.colaboradores[c.matricula] = c
+        except (sqlite3.DatabaseError, ValidacaoError):
             print("[AVISO] Não foi possível carregar os registros do arquivo de banco de dados.")
+
+    def importar_json(self, arquivo_json):
+        """Migra uma única vez os dados da versão anterior (colaboradores.json) para o SQLite."""
+        if not os.path.exists(arquivo_json):
+            return 0
+        try:
+            with open(arquivo_json, "r", encoding="utf-8") as f:
+                registros = [colaborador_de_registro(item) for item in json.load(f)]
+        except (OSError, ValueError, KeyError, TypeError, ValidacaoError):
+            print("[AVISO] Não foi possível importar o arquivo JSON da versão anterior.")
+            return 0
+        for colab in registros:
+            if colab.matricula not in self.colaboradores:
+                self.cadastrar(colab)
+        return len(registros)
 
 
 # ==========================================
@@ -276,7 +341,7 @@ def ler_int(mensagem: str) -> int:
             print("[ERRO] Digite um número inteiro válido.")
 
 def menu():
-    sistema = SistemaFolha()
+    sistema = SistemaFolha(BANCO_PADRAO, importar_json=JSON_ANTIGO)
 
     while True:
         print("\n=== SISTEMA DE FOLHA DE PAGAMENTO ===")

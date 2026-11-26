@@ -1,45 +1,40 @@
 # Testes de Aceitação
 
-**Data da execução:** 23/11/2026 (reavaliados contra a ERS v1.1 em 26/11/2026)
-**Ambiente:** aplicação Flask executada pelo cliente de teste HTTP
-**Versão:** ramo `folha-de-pagamento`, código de `a5f4f8a` (sem mudança de código até `73b2f6f`)
-**Escopo:** cadastro, consulta e listagem, exclusão e respostas de validação
+**1ª execução:** 23/11/2026, pela API Flask (cliente de teste HTTP), versão `a5f4f8a`
+**2ª execução:** 26/11/2026, depois das correções de D01 e D02, ramo `a3/correcoes-e-front`, pela API e pela interface NiceGUI
+**Escopo:** cadastro, consulta e listagem, alteração, exclusão, folha individual, resumo e validações
 
-## Cenários testados
+## Cenários
 
-| ID | Cenário | Resultado esperado | Resultado obtido | Situação |
+| ID | Cenário | Resultado esperado | 1ª execução (23/11) | 2ª execução (26/11) |
 |---|---|---|---|---|
-| TA-01 | Acessar a página inicial `/` | Status 200 e página HTML | Status 200; HTML | Aprovado |
-| TA-02 | Consultar colaboradores cadastrados | Status 200 e lista JSON | Status 200; lista JSON | Aprovado |
-| TA-03 | Cadastrar colaborador padrão `AT-001`, `Ana Aceitacao`, salário base 2.600 | Status 201 e mensagem de sucesso | Status 201; cadastro realizado | Aprovado |
-| TA-04 | Cadastrar de novo a matrícula `AT-001` | Status 400 e erro RN001 | Status 400; RN001 | Aprovado |
-| TA-05 | Cadastrar comissionado com salário 2.000, vendas 10.000 e comissão 5% | Status 201; bruto 2.500, INSS 250, IRRF 0, líquido 2.250 | Os mesmos valores | Aprovado |
-| TA-06 | Cadastrar colaborador por produção | Pela ERS v1.1 (RF004 e CT R01), o sistema pede salário base, quantidade e valor por unidade; com 1.500 + 500 × 10, bruto R$ 6.500,00 | O sistema não pede salário base; com 120 unidades a R$ 15,00 calculou bruto 1.800 | **Reprovado (D01)** |
-| TA-07 | Consultar a lista após os cadastros | Status 200 com matrícula, tipo, bruto e líquido | Status 200; registros listados | Aprovado |
-| TA-08 | Cadastrar com nome só de espaços | Status 400 e erro RN002 | Status 400; RN002 | Aprovado |
-| TA-09 | Cadastrar padrão com salário base negativo | Status 400 e erro RN003 | Status 400; RN003 | Aprovado |
-| TA-10 | Enviar quantidade produzida não numérica | Status 400 e mensagem de campo numérico inválido | Status 400; mensagem correta | Aprovado |
-| TA-11 | Excluir `AT-001` | Status 200 e mensagem de exclusão | Status 200; removido | Aprovado |
-| TA-12 | Excluir matrícula inexistente | Status 404 e "colaborador não encontrado" | Status 404 | Aprovado |
-| TA-13 | Cadastrar com tipo inválido | Status 400 e "tipo inválido" | Status 400 | Aprovado |
-| TA-14 | Consultar os dados consolidados | Lista disponível para o total líquido | Total observado R$ 42.498,00 antes da limpeza | Aprovado, com ressalva: o total inclui o valor de produção calculado sem salário base (D01) |
-
-## Cenários que faltam (pela ERS v1.1)
-
-| ID | Cenário | Por que falta |
-|---|---|---|
-| TA-15 | Alterar o cadastro de um colaborador (CT "P01 alterado": salário 3.000 → 3.500, líquido R$ 2.913,75) | A alteração não existe no sistema (D02) |
-| TA-16 | Gerar a folha individual de R01 e conferir bruto 6.500, INSS 650, IRRF 438,75, líquido 5.411,25 | Depende da correção de D01 |
+| TA-01 | Abrir a página inicial | Página carrega | Aprovado | Aprovado (API e interface) |
+| TA-02 | Consultar colaboradores cadastrados | Lista com os valores da folha | Aprovado | Aprovado |
+| TA-03 | Cadastrar padrão com salário base 2.600 | Cadastro realizado | Aprovado | Aprovado |
+| TA-04 | Cadastrar matrícula repetida | Recusa com RN001 | Aprovado | Aprovado; a interface avisa enquanto a matrícula é digitada |
+| TA-05 | Comissionado 2.000, vendas 10.000, 5% | Bruto 2.500, líquido 2.250 | Aprovado | Aprovado |
+| TA-06 | Produção com salário base 1.500, 500 unidades a R$ 10,00 (CT R01) | Bruto 6.500, INSS 650, IRRF 438,75, líquido 5.411,25 | Reprovado (D01: sem salário base) | **Aprovado** |
+| TA-07 | Lista após os cadastros | Registros com tipo, bruto e líquido | Aprovado | Aprovado |
+| TA-08 | Nome só com espaços | Recusa com RN002 | Aprovado | Aprovado; a interface marca o campo |
+| TA-09 | Salário base negativo | Recusa com RN003 | Aprovado | Aprovado, também para produção |
+| TA-10 | Quantidade não numérica | Recusa por campo numérico inválido | Aprovado | Aprovado |
+| TA-11 | Excluir colaborador existente | Registro removido | Aprovado | Aprovado; a interface pede confirmação |
+| TA-12 | Excluir matrícula inexistente | "Colaborador não encontrado" | Aprovado | Aprovado |
+| TA-13 | Tipo inválido | Recusa por tipo inválido | Aprovado | Aprovado |
+| TA-14 | Resumo consolidado com P01, C01 e R01 (CT019) | Bruto 12.000, INSS 1.200, IRRF 641,25, líquido 10.158,75 | Aprovado com ressalva (produção sem base) | **Aprovado** |
+| TA-15 | Alterar P01 de 3.000 para 3.500 | Líquido 2.913,75, gravado no arquivo | Não executável (D02) | **Aprovado** |
+| TA-16 | Folha individual de R01 | Bruto 6.500, líquido 5.411,25 | Não executável (D01) | **Aprovado** |
+| TA-17 | Cadastro vazio na interface | Matrícula, nome e salário base marcados como obrigatórios ao mesmo tempo | Não existia | **Aprovado** |
+| TA-18 | Autocorreção de digitação | Espaços nas pontas da matrícula e espaços repetidos no nome são removidos ao sair do campo | Não existia | **Aprovado** (verificado no navegador) |
 
 ## Resultado
 
-| Indicador | Valor |
-|---|---:|
-| Cenários executados | 14 |
-| Aprovados | 13 |
-| Reprovados | 1 (TA-06) |
-| Cenários pendentes | 2 (TA-15 e TA-16) |
+| Indicador | 23/11 | 26/11 |
+|---|---:|---:|
+| Cenários executados | 14 | 18 |
+| Aprovados | 13 | 18 |
+| Reprovados | 1 | 0 |
 
-O sistema **não está apto para homologação** enquanto D01 e D02 estiverem abertos. Depois das correções, executar de novo TA-06, TA-14, TA-15 e TA-16.
+Os cenários TA-01 a TA-17 são cobertos pelos testes automatizados de `test_integracao.py` e `test_telas.py` (mesmas regras e valores). O TA-18 foi conferido no navegador em 26/11/2026.
 
-Os cadastros temporários dos testes foram removidos da base depois da execução; os colaboradores originais foram preservados.
+O sistema está apto para homologação. Fica em aberto o D03 (JSON ou SQLite), que é decisão de documentação e não afeta o funcionamento.

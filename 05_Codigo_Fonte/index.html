@@ -117,7 +117,7 @@
 
     function alternarCampos() {
         const tipo = document.getElementById("tipo").value;
-        document.getElementById("groupSalarioBase").style.display = (tipo === "Producao") ? "none" : "block";
+        document.getElementById("groupSalarioBase").style.display = "block"; // ERS v1.1: os três tipos têm salário base
         document.getElementById("groupVendas").style.display = (tipo === "Comissionado") ? "block" : "none";
         document.getElementById("groupComissao").style.display = (tipo === "Comissionado") ? "block" : "none";
         document.getElementById("groupQtdProduzida").style.display = (tipo === "Producao") ? "block" : "none";

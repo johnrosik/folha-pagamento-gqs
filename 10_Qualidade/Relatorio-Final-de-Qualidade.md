@@ -1,91 +1,61 @@
 # Relatório Final de Qualidade
 
 **Projeto:** Financy, Sistema de Folha de Pagamento
-**Versão avaliada:** ramo `folha-de-pagamento`, commit `73b2f6f`
-**Execuções:** 23/11/2026 (suíte, fumaça da API e aceitação) e 26/11/2026 (suíte e cobertura, refeitas)
-**Arquivos analisados:** `folhadepagamento.py`, `app.py`, `test_folhadepagamento.py`, `index.html`
+**Versão avaliada:** ramo `a3/correcoes-e-front`
+**Data:** 26/11/2026
 **Referência de requisitos:** Documento de Visão e ERS da A1, versão 1.1
 
 ## 1. Resumo
 
-A suíte automatizada passa inteira (16 de 16) e cobre 98% do módulo de domínio. A validação contra a ERS v1.1, porém, encontrou três defeitos e uma lacuna de teste:
-
-| ID | Defeito | Requisito | Severidade |
-|---|---|---|---|
-| D01 | Colaborador por produção calcula o bruto sem o salário base (só quantidade × valor por unidade) | RF004, RN008, CT R01 | Alta |
-| D02 | Não existe alteração de cadastro; só a exclusão | RF009 | Alta |
-| D03 | Persistência em arquivo JSON; a arquitetura da A1 prevê banco SQLite e o repositório `RepositorioSQLite` | RNF003, Arquitetura, diagramas 3.2 e 3.3 | Média |
-| D04 | O teste de produção confere o valor sem salário base (1.800) e passa com o defeito D01 | RF004 | Alta |
-
-Conclusão: o sistema ainda **não está pronto para homologação**. Os defeitos estão no Registro de Defeitos (`10_Qualidade/Registro-de-Defeitos.md`) e devem ser corrigidos antes de uma nova rodada.
-
-## 2. Situação dos requisitos (ERS v1.1)
-
-| Requisito | Evidência de implementação | Evidência de teste | Situação |
-|---|---|---|---|
-| RF001 Cadastro de colaborador | `SistemaFolha.cadastrar` | `test_cadastra_consulta_e_impede_matricula_duplicada` | Atendido |
-| RF002 Cadastro de colaborador padrão | `ColaboradorPadrao` | Cálculo padrão e menu | Atendido |
-| RF003 Cadastro de colaborador comissionado | `ColaboradorComissionado` | Cálculo de comissão e menu | Atendido |
-| RF004 Cadastro de colaborador por produção | `ColaboradorProducao` não recebe salário base | O teste confere o valor errado (D04) | **Não atendido (D01)** |
-| RF005 Consulta e listagem | `SistemaFolha.consultar`, `GET /api/colaboradores` | Consulta existente e inexistente | Atendido |
-| RF006 Cálculo de salário | `calcular_salario_bruto` em cada tipo | Testes de cálculo | **Parcial**: correto para padrão e comissionado; errado para produção (D01) |
-| RF007 Folha de pagamento individual | `gerar_folha_individual` | Relatório individual e inexistente | Atendido |
-| RF008 Emissão de resumo da folha | `emitir_resumo_folha` | Totais do resumo | Atendido (os totais herdam o erro de D01 quando há colaborador de produção) |
-| RF009 Alteração e exclusão de cadastros | Só `SistemaFolha.excluir` | Só exclusão | **Parcial (D02)** |
-| RF010 Descontos e salário líquido | `calcular_inss`, `calcular_irrf`, `calcular_salario_liquido` | Testes de INSS, IRRF e limite | Atendido |
-| RN001 Matrícula única | `cadastrar` | Matrícula duplicada | Atendido |
-| RN002 Nome obrigatório | `Colaborador.__init__` | Nome vazio | Atendido |
-| RN003 Salário base não negativo | Padrão e comissionado | Casos negativos | Atendido |
-| RN004 Vendas não negativas | `ColaboradorComissionado` | Caso negativo | Atendido |
-| RN005 Comissão não negativa | `ColaboradorComissionado` | Caso negativo | Atendido |
-| RN006 Quantidade produzida não negativa | `ColaboradorProducao` | Caso negativo | Atendido |
-| RN007 Valor por unidade não negativo | `ColaboradorProducao` | Caso negativo | Atendido |
-| RN008 Cálculo automático do salário final | Métodos de cálculo | Testes de cálculo | **Parcial (D01)** |
-| RNF001 Interface amigável e intuitiva | Menu de terminal e página web | Menu testado; página só por fumaça | Atendido |
-| RNF002 Validação antes do cálculo | Validações no construtor, `ler_float`, `ler_int`, API | Reentrada e entradas inválidas | Atendido |
-| RNF003 Persistência | `salvar_dados` e `carregar_dados` em JSON | Salvar, recarregar e JSON inválido | **Atendido com desvio (D03)** |
-| RNF004 Novos tipos sem alterar cálculos | Classe abstrata `Colaborador` e subclasses | Sem teste dedicado; verificado por revisão | Atendido por implementação |
-
-Totais: 22 requisitos (10 RF, 8 RN, 4 RNF). 16 atendidos, 1 atendido com desvio, 4 parciais, 1 não atendido.
-
-## 3. Resultados dos testes
-
-### 3.1 Suíte unitária
-
-| Execução | Comando | Resultado |
+| Indicador | Primeira validação (26/11, versão `73b2f6f`) | Depois das correções (26/11) |
 |---|---|---|
-| 23/11/2026 | `python -m unittest -v` | 16 de 16 aprovados |
-| 26/11/2026 | `python -m unittest` | 16 de 16 aprovados |
+| Testes automatizados | 16 de 16 | 48 de 48 (+15 subtestes) |
+| Cobertura (linhas e ramos) | 98% no domínio, 0% na API | 98% no domínio, na API e na interface |
+| Requisitos atendidos | 16 de 22 | 21 de 22 (RNF003 atendido com desvio documental, D03) |
+| Defeitos abertos | 4 | 1 (D03, decisão do grupo) |
+| Testes de aceitação | 13 de 14 | 18 de 18 |
 
-Atenção: aprovado não significa correto. O teste `test_colaborador_producao_calcula_salario_bruto` espera 1.800 para 120 unidades a R$ 15,00, valor que ignora o salário base exigido pela ERS (D04).
+## 2. O que foi corrigido
 
-### 3.2 Testes de fumaça da API (23/11/2026)
+| Defeito | Correção |
+|---|---|
+| D01 produção sem salário base | Salário base no domínio, no menu, na API, na interface e no arquivo de dados |
+| D02 sem alteração de cadastro | Alteração no domínio, no menu (opção 8), na API (`PUT`) e na interface |
+| D04 teste com valor errado | Teste conferindo o CT R01 completo |
 
-Feitos em memória com o cliente de teste do Flask: `GET /` (200), `GET /api/colaboradores` (200), `POST /api/colaboradores` (201), `DELETE /api/colaboradores/QA-REPORT` (200). Essas chamadas **não estão no repositório**, então não podem ser repetidas por outra pessoa. Não contam como testes de integração do artefato 12.
+Detalhes e verificação: `10_Qualidade/Registro-de-Defeitos.md`.
 
-### 3.3 Testes de integração
+## 3. O que foi acrescentado
 
-Não há testes de integração automatizados no repositório (API, persistência e fluxo cadastro → folha → resumo). Lacuna do artefato 12.
+| Item | Onde |
+|---|---|
+| Interface web em Python puro (NiceGUI), estilo ERP: menu lateral, telas de Colaboradores, Novo colaborador, Folha individual e Resumo; tabela com cabeçalho fixo e busca; validação ao digitar; prévia do cálculo feita pelo próprio domínio; tema escuro | `05_Codigo_Fonte/interface.py` |
+| Testes de integração da API | `05_Codigo_Fonte/test_integracao.py` |
+| Testes das regras e das telas da interface | `05_Codigo_Fonte/test_interface.py`, `05_Codigo_Fonte/test_telas.py` |
+| Scripts de execução | `07_Executavel/` |
+| Relatório de execução e cobertura | `04_Testes/Relatorio-de-Execucao-e-Cobertura.md` |
 
-## 4. Métricas
+## 4. Situação dos requisitos (ERS v1.1)
 
-| Métrica | Resultado | Data |
-|---|---:|---|
-| Testes unitários executados | 16 | 26/11 |
-| Testes unitários aprovados | 16 | 26/11 |
-| Cobertura de `folhadepagamento.py` (linhas e ramos) | 98% (223 instruções, 3 não cobertas; 54 ramos, 2 parciais) | 26/11 |
-| Cobertura de `app.py` | 0% (nenhum teste importa a API) | 26/11 |
-| Testes de aceitação executados | 14 | 23/11 |
-| Testes de aceitação aprovados | 13 (TA-06 reprovado, ver `09_Homologacao`) | 23/11, reavaliado em 26/11 |
-| Requisitos atendidos | 16 de 22 | 26/11 |
-| Defeitos abertos | 4 (D01 a D04) | 26/11 |
+| Requisito | Implementação | Situação |
+|---|---|---|
+| RF001 Cadastro de colaborador | `SistemaFolha.cadastrar`, API `POST`, tela Novo colaborador | Atendido |
+| RF002 Colaborador padrão | `ColaboradorPadrao` | Atendido |
+| RF003 Colaborador comissionado | `ColaboradorComissionado` | Atendido |
+| RF004 Colaborador por produção | `ColaboradorProducao` com salário base | Atendido |
+| RF005 Consulta e listagem | `consultar`, API `GET`, tela Colaboradores com busca | Atendido |
+| RF006 Cálculo de salário | `calcular_salario_bruto` em cada tipo | Atendido |
+| RF007 Folha individual | `gerar_folha_individual`, API `GET /<matrícula>`, tela Folha individual | Atendido |
+| RF008 Resumo da folha | `emitir_resumo_folha`, tela Resumo da folha | Atendido |
+| RF009 Alteração e exclusão | `alterar`, `excluir`, API `PUT` e `DELETE`, telas | Atendido |
+| RF010 Descontos e salário líquido | INSS 10%, IRRF 7,5% acima de 2.259,20 | Atendido |
+| RN001 a RN007 | Validação no domínio, repetida na tela ao digitar | Atendidas |
+| RN008 Cálculo automático | Métodos de cálculo; a prévia da tela usa o próprio domínio | Atendido |
+| RNF001 Interface amigável | Menu de terminal e interface NiceGUI | Atendido |
+| RNF002 Validação antes do cálculo | Domínio, API e interface | Atendido |
+| RNF003 Persistência | Arquivo JSON | Atendido com desvio (D03) |
+| RNF004 Novos tipos sem alterar cálculos | Classe abstrata `Colaborador` | Atendido por implementação |
 
-A cobertura foi medida só sobre o código do sistema, com `python -m coverage run --branch --source=folhadepagamento,app -m unittest` e `python -m coverage report`. O arquivo de testes não entra na conta, porque cobrir o próprio teste não diz nada sobre o sistema.
+## 5. Conclusão
 
-## 5. Conclusões e próximos passos
-
-1. Corrigir D01 e D04 juntos: produção passa a receber salário base, e o teste passa a esperar o valor da ERS (CT R01: 1.500 + 500 × 10 = R$ 6.500,00).
-2. Corrigir D02: alteração de cadastro no terminal, na API e na página.
-3. Decidir D03 em grupo: migrar para SQLite (com script em `06_Banco_Dados`) ou corrigir a arquitetura e os diagramas para JSON.
-4. Escrever os testes de integração (artefato 12) e incluir `app.py` na cobertura.
-5. Refazer suíte, cobertura e aceitação e atualizar este relatório.
+O sistema atende aos requisitos funcionais e às regras de negócio da ERS v1.1, com 48 testes automatizados aprovados e 98% de cobertura. Antes da entrega, o grupo precisa decidir o D03: migrar para SQLite ou corrigir a arquitetura para JSON.

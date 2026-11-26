@@ -1,0 +1,23 @@
+[
+    {
+        "tipo": "Padrao",
+        "matricula": "1",
+        "nome": "fabio",
+        "salario_base": 12000.0
+    },
+    {
+        "tipo": "Comissionado",
+        "matricula": "2",
+        "nome": "julio",
+        "salario_base": 20000.0,
+        "vendas": 12000.0,
+        "comissao_pct": 20.0
+    },
+    {
+        "tipo": "Producao",
+        "matricula": "3",
+        "nome": "johan",
+        "qtd_produzida": 1000,
+        "valor_unidade": 12.0
+    }
+]

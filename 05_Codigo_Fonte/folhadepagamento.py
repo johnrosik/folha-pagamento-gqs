@@ -259,7 +259,7 @@ def ler_int(mensagem: str) -> int:
     while True:
         try:
             return int(input(mensagem))
-        except ValueError:
+        except ValueError: 
             print("[ERRO] Digite um número inteiro válido.")
 
 def menu():

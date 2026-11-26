@@ -104,25 +104,30 @@ class ColaboradorComissionado(Colaborador):
 
 # RF004 – Cadastro de Colaborador por Produção
 class ColaboradorProducao(Colaborador):
-    def __init__(self, matricula: str, nome: str, qtd_produzida: int, valor_unidade: float):
+    def __init__(self, matricula: str, nome: str, salario_base: float, qtd_produzida: int, valor_unidade: float):
         super().__init__(matricula, nome)
-        # RN006, RN007
+        # RN003, RN006, RN007
+        if salario_base < 0:
+            raise ValidacaoError("RN003: O salário base não pode ser negativo.")
         if qtd_produzida < 0:
             raise ValidacaoError("RN006: A quantidade produzida não pode ser negativa.")
         if valor_unidade < 0:
             raise ValidacaoError("RN007: O valor pago por unidade produzida não pode ser negativo.")
 
+        self.salario_base = salario_base
         self.qtd_produzida = qtd_produzida
         self.valor_unidade = valor_unidade
 
     def calcular_salario_bruto(self) -> float:
-        return self.qtd_produzida * self.valor_unidade
+        # ERS v1.1: salário base + quantidade produzida × valor por unidade
+        return self.salario_base + (self.qtd_produzida * self.valor_unidade)
 
     def to_dict(self) -> dict:
         return {
             "tipo": "Producao",
             "matricula": self.matricula,
             "nome": self.nome,
+            "salario_base": self.salario_base,
             "qtd_produzida": self.qtd_produzida,
             "valor_unidade": self.valor_unidade
         }
@@ -150,6 +155,13 @@ class SistemaFolha:
         if matricula not in self.colaboradores:
             raise ValidacaoError("Colaborador não encontrado.")
         del self.colaboradores[matricula]
+        self.salvar_dados()
+
+    def alterar(self, colab: Colaborador):
+        """RF009: Manutenção de Cadastros (Alteração). A matrícula identifica o registro e não muda."""
+        if colab.matricula not in self.colaboradores:
+            raise ValidacaoError("Colaborador não encontrado.")
+        self.colaboradores[colab.matricula] = colab
         self.salvar_dados()
 
     def consultar(self, matricula: str) -> Colaborador:
@@ -237,7 +249,8 @@ class SistemaFolha:
                     elif tipo == "Comissionado":
                         c = ColaboradorComissionado(item["matricula"], item["nome"], item["salario_base"], item["vendas"], item["comissao_pct"])
                     elif tipo == "Producao":
-                        c = ColaboradorProducao(item["matricula"], item["nome"], item["qtd_produzida"], item["valor_unidade"])
+                        # Registros gravados antes da correção não têm salário base: valem 0.
+                        c = ColaboradorProducao(item["matricula"], item["nome"], item.get("salario_base", 0), item["qtd_produzida"], item["valor_unidade"])
                     self.colaboradores[c.matricula] = c
         except Exception:
             print("[AVISO] Não foi possível carregar os registros do arquivo de banco de dados.")
@@ -274,6 +287,7 @@ def menu():
         print("5. Gerar Folha Individual (RF007)")
         print("6. Emitir Resumo Consolidado da Folha (RF008)")
         print("7. Excluir Colaborador (RF009)")
+        print("8. Alterar Colaborador (RF009)")
         print("0. Sair")
 
         opcao = input("Escolha uma opcao: ").strip()
@@ -300,9 +314,10 @@ def menu():
             elif opcao == "3":
                 mat = input("Matrícula: ")
                 nome = input("Nome: ")
+                sal_base = ler_float("Salário Base (R$): ")
                 qtd = ler_int("Quantidade Produzida: ")
                 valor_u = ler_float("Valor por Unidade (R$): ")
-                c = ColaboradorProducao(mat, nome, qtd, valor_u)
+                c = ColaboradorProducao(mat, nome, sal_base, qtd, valor_u)
                 sistema.cadastrar(c)
                 print("[SUCESSO] Colaborador por Produção cadastrado!")
 
@@ -325,6 +340,27 @@ def menu():
                 mat = input("Digite a matrícula a remover: ")
                 sistema.excluir(mat)
                 print("[SUCESSO] Registro removido.")
+
+            elif opcao == "8":
+                mat = input("Digite a matrícula a alterar: ").strip()
+                atual = sistema.consultar(mat)
+                if not atual:
+                    print("\n[ERRO] Colaborador não encontrado.")
+                    continue
+                print(f"Alterando {atual.nome} ({atual.to_dict()['tipo']}). Informe os novos dados.")
+                nome = input("Nome: ")
+                if isinstance(atual, ColaboradorComissionado):
+                    novo = ColaboradorComissionado(mat, nome, ler_float("Salário Base (R$): "),
+                                                   ler_float("Total de Vendas (R$): "),
+                                                   ler_float("Percentual de Comissão (%): "))
+                elif isinstance(atual, ColaboradorProducao):
+                    novo = ColaboradorProducao(mat, nome, ler_float("Salário Base (R$): "),
+                                               ler_int("Quantidade Produzida: "),
+                                               ler_float("Valor por Unidade (R$): "))
+                else:
+                    novo = ColaboradorPadrao(mat, nome, ler_float("Salário Base (R$): "))
+                sistema.alterar(novo)
+                print("[SUCESSO] Cadastro alterado!")
 
             elif opcao == "0":
                 print("\nSaindo do sistema. Até logo!")

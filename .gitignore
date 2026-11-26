@@ -10,3 +10,6 @@ htmlcov/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Banco local do Financy (criado na primeira execução; os dados de exemplo vêm do colaboradores.json)
+*.db

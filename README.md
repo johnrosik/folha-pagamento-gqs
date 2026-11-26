@@ -32,7 +32,7 @@ Trabalho Integrador (A1 e A3) da unidade curricular Garantia da Qualidade de Sof
 | `03_Projeto` | Documento de Arquitetura |
 | `04_Testes` | Plano de Testes, casos de teste, relatórios de execução e cobertura |
 | `05_Codigo_Fonte` | Código do sistema |
-| `06_Banco_Dados` | Script de criação do banco SQLite |
+| `06_Banco_Dados` | Script de criação do banco SQLite (`criar_banco.sql`) |
 | `07_Executavel` | Instruções e script para executar o sistema |
 | `08_Manuais` | Manual do Usuário e Manual Técnico |
 | `09_Homologacao` | Testes de aceitação e Termo de Homologação |
@@ -52,9 +52,9 @@ Situação atual (código herdado do T1): só o menu de terminal funciona.
 python 05_Codigo_Fonte/folhadepagamento.py
 ```
 
-Os dados são gravados em `colaboradores.json`, na pasta de onde o comando foi executado.
+Os dados são gravados no banco SQLite `05_Codigo_Fonte/financy.db`, criado na primeira execução. Se existir um `colaboradores.json` da versão anterior, ele é importado uma única vez.
 
-Na A3, a persistência passa para SQLite e a página `index.html` passa a ser servida por uma API Flask. As instruções completas de instalação e execução entram aqui quando essa versão estiver no `main`.
+A interface web (NiceGUI) abre com `07_Executavel/executar.bat` (Windows) ou `executar.sh` (Linux e macOS), em http://localhost:8080.
 
 ## Como rodar os testes
 

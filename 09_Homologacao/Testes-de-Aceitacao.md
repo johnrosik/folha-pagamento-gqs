@@ -37,4 +37,4 @@
 
 Os cenários TA-01 a TA-17 são cobertos pelos testes automatizados de `test_integracao.py` e `test_telas.py` (mesmas regras e valores). O TA-18 foi conferido no navegador em 26/11/2026.
 
-O sistema está apto para homologação. Fica em aberto o D03 (JSON ou SQLite), que é decisão de documentação e não afeta o funcionamento.
+O sistema está apto para homologação. O D03 foi fechado: os dados ficam no banco SQLite `financy.db`.

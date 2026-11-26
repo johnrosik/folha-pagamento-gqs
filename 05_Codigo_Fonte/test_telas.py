@@ -1,11 +1,16 @@
 """Testes das telas NiceGUI com o usuário simulado (navegar, digitar, clicar, ver).
 
-Rodam com pytest; os dados vêm de um arquivo temporário (conftest.py).
+Rodam com pytest; os dados vêm de um banco SQLite temporário (conftest.py).
 """
-import json
-
 from nicegui import ui
 from nicegui.testing import User
+
+from folhadepagamento import SistemaFolha
+
+
+def gravados(banco):
+    """Lê de novo o banco, como o sistema faria ao reabrir."""
+    return SistemaFolha(str(banco)).colaboradores
 
 
 async def test_lista_mostra_colaboradores_e_valores(user: User):
@@ -54,8 +59,7 @@ async def test_cadastra_colaborador_por_producao(user: User, dados_temporarios):
     await user.should_see("R$ 5.411,25")  # prévia calculada pelo domínio
     user.find(marker="salvar").click()
     await user.should_see("Colaborador cadastrado")
-    gravados = {c["matricula"]: c for c in json.loads(dados_temporarios.read_text(encoding="utf-8"))}
-    assert gravados["R01"]["salario_base"] == 1500
+    assert gravados(dados_temporarios)["R01"].salario_base == 1500
 
 
 async def test_valor_negativo_e_recusado(user: User):
@@ -76,8 +80,7 @@ async def test_altera_cadastro(user: User, dados_temporarios):
     await user.should_see("R$ 2.913,75")
     user.find(marker="salvar").click()
     await user.should_see("Cadastro alterado")
-    gravados = {c["matricula"]: c for c in json.loads(dados_temporarios.read_text(encoding="utf-8"))}
-    assert gravados["P01"]["salario_base"] == 3500
+    assert gravados(dados_temporarios)["P01"].salario_base == 3500
 
 
 async def test_editar_matricula_inexistente(user: User):
@@ -104,5 +107,4 @@ async def test_excluir_pela_tabela_com_confirmacao(user: User, dados_temporarios
     await user.should_see("Excluir Caio Martins (C01)?")
     user.find(marker="confirmar-exclusao").click()
     await user.should_see("Colaborador excluído")
-    gravados = [c["matricula"] for c in json.loads(dados_temporarios.read_text(encoding="utf-8"))]
-    assert gravados == ["P01"]
+    assert list(gravados(dados_temporarios)) == ["P01"]

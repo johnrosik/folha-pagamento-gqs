@@ -14,7 +14,7 @@ class TestRegrasDaInterface(unittest.TestCase):
     def setUp(self):
         self.diretorio = tempfile.TemporaryDirectory()
         self.original = interface.sistema
-        interface.sistema = SistemaFolha(str(Path(self.diretorio.name) / "colaboradores.json"))
+        interface.sistema = SistemaFolha(str(Path(self.diretorio.name) / "financy.db"))
 
     def tearDown(self):
         interface.sistema = self.original
@@ -79,6 +79,20 @@ class TestRegrasDaInterface(unittest.TestCase):
         self.assertAlmostEqual(r["liquido"], 10158.75)
         self.assertEqual(r["por_tipo"]["Producao"]["quantidade"], 1)
         self.assertAlmostEqual(r["por_tipo"]["Producao"]["liquido"], 5411.25)
+
+    def test_total_e_a_soma_das_linhas_em_centavos(self):
+        # Líquido de cada um é R$ 4.070,925: cada holerite paga R$ 4.070,93, então a folha soma R$ 8.141,86
+        # (somar sem arredondar daria R$ 8.141,85, um centavo diferente da soma das linhas na tela).
+        for matricula in ("R1", "R2"):
+            interface.sistema.cadastrar(ColaboradorProducao(matricula, "Diego", 1200, 820, 4.5))
+
+        linhas = [interface.linha_da_tabela(c) for c in interface.sistema.colaboradores.values()]
+        r = interface.resumo_da_folha()
+
+        self.assertEqual(linhas[0]["liquido"], 4070.93)
+        self.assertEqual(linhas[0]["irrf"], 330.08)
+        self.assertEqual(r["liquido"], 8141.86)
+        self.assertEqual(interface.brl(r["liquido"]), "R$ 8.141,86")
 
     def test_linha_da_tabela_traz_tipo_e_valores(self):
         linha = interface.linha_da_tabela(ColaboradorProducao("R01", "Rita", 1500, 500, 10))
